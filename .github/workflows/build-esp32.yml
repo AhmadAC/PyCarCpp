@@ -1,4 +1,3 @@
-
 name: Compile ESP32 PyCar Firmware
 
 on:
@@ -36,7 +35,7 @@ jobs:
           idf.py set-target esp32
           idf.py build
           
-          # Merge binaries into a single flashable file
+          # Merge binaries into a single flashable file starting at 0x0
           cd build
           esptool.py --chip esp32 merge_bin -o ../build_out/merged-pycar-esp32.bin --fill-flash-size 4MB @flash_args
           cd ..
