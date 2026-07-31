@@ -19,10 +19,14 @@ extern volatile bool is_ap_mode_active;
 // Subsystem initializers
 void car_hardware_init();
 void car_hardware_loop();
+void car_set_headlight(bool enable);
+void car_set_line_follower(bool enable);
 void display_init();
 void display_update(bool wifi_on, bool ble_on, bool line_on, bool light_on, float dist, float gap, bool fw, bool bw, bool lt, bool rt);
 
 void comms_espnow_init();
 void comms_ble_init();
 void comms_wifi_ap_init();
+void comms_wifi_sta_connect(const char* ssid, const char* pass);
 void process_remote_command(const char* payload);
+void process_serial_command(const char* cmd);

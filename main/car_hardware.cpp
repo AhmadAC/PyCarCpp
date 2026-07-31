@@ -1,4 +1,3 @@
-
 #include "main.h"
 #include "driver/mcpwm.h"
 #include "driver/gpio.h"
@@ -52,6 +51,15 @@ float last_error = 0.0f;
 
 static void IRAM_ATTR enc1_isr(void* arg) { count1++; }
 static void IRAM_ATTR enc2_isr(void* arg) { count2++; }
+
+void car_set_headlight(bool enable) {
+    headlight_state = enable;
+    gpio_set_level(PIN_LIGHT, headlight_state ? 1 : 0);
+}
+
+void car_set_line_follower(bool enable) {
+    line_follower_state = enable;
+}
 
 void car_set_motors(int m1, int m2, int m3, int m4) {
     if (m1 >= 0) { mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, m1 * 100.0 / 1023.0); mcpwm_set_duty(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, 0); }
@@ -162,13 +170,12 @@ void car_hardware_loop() {
 
     bool light_btn = (global_joy.btns & 0x20);
     if (light_btn && !last_light_btn) {
-        headlight_state = !headlight_state;
-        gpio_set_level(PIN_LIGHT, headlight_state ? 1 : 0);
+        car_set_headlight(!headlight_state);
     }
     last_light_btn = light_btn;
 
     bool line_btn = (global_joy.btns & 0x10);
-    if (line_btn && !last_line_btn) line_follower_state = !line_follower_state;
+    if (line_btn && !last_line_btn) car_set_line_follower(!line_follower_state);
     last_line_btn = line_btn;
 
     int turn_input = global_joy.lx - 128;

@@ -1,9 +1,13 @@
-
 #include "main.h"
 #include "esp_wifi.h"
 #include "esp_http_server.h"
+#include "esp_log.h"
 #include "lwip/sockets.h"
 #include "cJSON.h"
+
+static const char* TAG = "COMMS_WIFI";
+static esp_netif_t *ap_netif = NULL;
+static esp_netif_t *sta_netif = NULL;
 
 // Original HTML exactly as formatted in python strings
 static const char* HTML_PAGE = R"raw_html(<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -163,7 +167,9 @@ static void dns_server_task(void *pvParameters) {
 void comms_wifi_ap_init() {
     esp_netif_init();
     esp_event_loop_create_default();
-    esp_netif_t *ap_netif = esp_netif_create_default_wifi_ap();
+    if (!ap_netif) {
+        ap_netif = esp_netif_create_default_wifi_ap();
+    }
     
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     esp_wifi_init(&cfg);
@@ -197,4 +203,29 @@ void comms_wifi_ap_init() {
         httpd_register_uri_handler(server, &uri_ws);
         httpd_register_uri_handler(server, &uri_fallback);
     }
+    ESP_LOGI(TAG, "Wi-Fi Access Point 'pyCar_AP' started at 192.168.4.1");
+}
+
+void comms_wifi_sta_connect(const char* ssid, const char* pass) {
+    esp_netif_init();
+    esp_event_loop_create_default();
+    if (!sta_netif) {
+        sta_netif = esp_netif_create_default_wifi_sta();
+    }
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    esp_wifi_init(&cfg);
+
+    wifi_config_t sta_config = {};
+    strncpy((char*)sta_config.sta.ssid, ssid, sizeof(sta_config.sta.ssid) - 1);
+    strncpy((char*)sta_config.sta.password, pass, sizeof(sta_config.sta.password) - 1);
+    sta_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
+
+    esp_wifi_stop();
+    esp_wifi_set_mode(WIFI_MODE_STA);
+    esp_wifi_set_config(WIFI_IF_STA, &sta_config);
+    esp_wifi_start();
+    esp_wifi_connect();
+
+    ESP_LOGI(TAG, "Connecting to Wi-Fi Station Network SSID: '%s' ...", ssid);
 }
