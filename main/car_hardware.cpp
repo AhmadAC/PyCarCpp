@@ -4,7 +4,9 @@
 #include "driver/gpio.h"
 #include "esp_timer.h"
 #include "esp_rom_sys.h"
+#include "esp_attr.h"
 #include <math.h>
+#include <stdlib.h>
 
 #define M1_P GPIO_NUM_14
 #define M1_N GPIO_NUM_15
