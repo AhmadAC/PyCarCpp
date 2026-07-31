@@ -1,0 +1,48 @@
+
+name: Compile ESP32 PyCar Firmware
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-espidf:
+    name: Build ESP-IDF Firmware
+    runs-on: ubuntu-latest
+    container: espressif/idf:release-v5.2
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Compile ESP-IDF Project
+        shell: bash
+        run: |
+          . /opt/esp/idf/export.sh
+          git config --global --add safe.directory "*"
+          
+          mkdir -p build_out
+          
+          echo "Compiling PyCar ESP32 Project"
+          if [ -f "sdkconfig.defaults" ]; then
+              sed -i 's/CONFIG_\([A-Za-z0-9_]*\) \([-0-9A-Za-z_]*\)/CONFIG_\1=\2/g' sdkconfig.defaults
+          fi
+          
+          idf.py set-target esp32
+          idf.py build
+          
+          # Merge binaries into a single flashable file
+          cd build
+          esptool.py --chip esp32 merge_bin -o ../build_out/merged-pycar-esp32.bin --fill-flash-size 4MB @flash_args
+          cd ..
+
+      - name: Upload Binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: pycar-esp32-binaries
+          path: build_out/
