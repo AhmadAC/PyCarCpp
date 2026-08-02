@@ -179,8 +179,9 @@ void car_hardware_loop() {
     last_line_btn = line_btn;
 
     int turn_input = global_joy.lx - 128;
-    int left_drive_input = global_joy.ly - 128;
-    int right_drive_input = global_joy.ry - 128;
+    // Inverted Y-axis calculations so Joystick UP gives positive drive (FORWARD) and DOWN gives negative drive (BACKWARD)
+    int left_drive_input = 128 - global_joy.ly;
+    int right_drive_input = 128 - global_joy.ry;
 
     int drive_input = (abs(left_drive_input) > abs(right_drive_input)) ? left_drive_input : right_drive_input;
     if (abs(turn_input) <= 15) turn_input = 0;
@@ -194,7 +195,7 @@ void car_hardware_loop() {
     int right_speed = throttle - steering;
 
     int m1 = left_speed;
-    int m4 = -left_speed; // Preserving exact python math logic
+    int m4 = -left_speed;
     int m2 = right_speed;
     int m3 = right_speed;
 

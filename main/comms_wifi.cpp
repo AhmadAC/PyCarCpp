@@ -4,12 +4,13 @@
 #include "esp_log.h"
 #include "lwip/sockets.h"
 #include "cJSON.h"
+#include <string.h>
+#include <stdlib.h>
 
 static const char* TAG = "COMMS_WIFI";
 static esp_netif_t *ap_netif = NULL;
 static esp_netif_t *sta_netif = NULL;
 
-// Original HTML exactly as formatted in python strings
 static const char* HTML_PAGE = R"raw_html(<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>pyCar Dashboard</title>
 <style>
@@ -82,19 +83,20 @@ static const char* HTML_PAGE = R"raw_html(<!DOCTYPE html><html><head><meta name=
 </body></html>)raw_html";
 
 void process_remote_command(const char* payload) {
+    if (!payload) return;
     cJSON *json = cJSON_Parse(payload);
     if (!json) return;
     
     cJSON *act = cJSON_GetObjectItem(json, "action");
     if (act && act->valuestring) {
         const char* a = act->valuestring;
-        if (strcmp(a, "forward")==0) global_joy.ly = 255;
-        else if (strcmp(a, "backward")==0) global_joy.ly = 0;
-        else if (strcmp(a, "left")==0) global_joy.lx = 0;
-        else if (strcmp(a, "right")==0) global_joy.lx = 255;
-        else if (strcmp(a, "stop")==0) { global_joy.lx=128; global_joy.ly=128; }
-        else if (strcmp(a, "light")==0) global_joy.btns ^= 0x20;
-        else if (strcmp(a, "line")==0) global_joy.btns ^= 0x10;
+        if (strcmp(a, "forward") == 0)       { global_joy.lx = 128; global_joy.ly = 0; }   // 0 = Joystick UP (FORWARD)
+        else if (strcmp(a, "backward") == 0) { global_joy.lx = 128; global_joy.ly = 255; } // 255 = Joystick DOWN (BACKWARD)
+        else if (strcmp(a, "left") == 0)     { global_joy.lx = 0;   global_joy.ly = 128; }
+        else if (strcmp(a, "right") == 0)    { global_joy.lx = 255; global_joy.ly = 128; }
+        else if (strcmp(a, "stop") == 0)     { global_joy.lx = 128; global_joy.ly = 128; global_joy.rx = 128; global_joy.ry = 128; }
+        else if (strcmp(a, "light") == 0)    { car_set_headlight(!headlight_state); }
+        else if (strcmp(a, "line") == 0)     { car_set_line_follower(!line_follower_state); }
     } else {
         cJSON *lx = cJSON_GetObjectItem(json, "lx"); if (lx) global_joy.lx = lx->valueint;
         cJSON *ly = cJSON_GetObjectItem(json, "ly"); if (ly) global_joy.ly = ly->valueint;
@@ -115,6 +117,50 @@ static esp_err_t ws_handler(httpd_req_t *req) {
         if (httpd_ws_recv_frame(req, &ws_pkt, ws_pkt.len) == ESP_OK) process_remote_command((char*)buf);
         free(buf);
     }
+    return ESP_OK;
+}
+
+// HTTP POST Handler for HTTP App Controls
+static esp_err_t http_post_handler(httpd_req_t *req) {
+    char buf[512] = {0};
+    int total_len = req->content_len;
+    int cur_len = 0;
+
+    if (total_len >= sizeof(buf)) total_len = sizeof(buf) - 1;
+
+    while (cur_len < total_len) {
+        int received = httpd_req_recv(req, buf + cur_len, total_len - cur_len);
+        if (received <= 0) {
+            if (received == HTTPD_SOCK_ERR_TIMEOUT) {
+                httpd_resp_send_408(req);
+            }
+            return ESP_FAIL;
+        }
+        cur_len += received;
+    }
+    buf[cur_len] = '\0';
+
+    if (cur_len > 0) process_remote_command(buf);
+
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_sendstr(req, "{\"status\":\"ok\"}");
+    return ESP_OK;
+}
+
+// HTTP GET Action Handler (e.g., /claw?cmd=open or /action?action=forward)
+static esp_err_t http_get_action_handler(httpd_req_t *req) {
+    char qbuf[256] = {0};
+    if (httpd_req_get_url_query_str(req, qbuf, sizeof(qbuf)) == ESP_OK) {
+        char param[64] = {0};
+        if (httpd_query_key_value(qbuf, "action", param, sizeof(param)) == ESP_OK ||
+            httpd_query_key_value(qbuf, "cmd", param, sizeof(param)) == ESP_OK) {
+            char jbuf[128];
+            snprintf(jbuf, sizeof(jbuf), "{\"action\":\"%s\"}", param);
+            process_remote_command(jbuf);
+        }
+    }
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_sendstr(req, "{\"status\":\"ok\"}");
     return ESP_OK;
 }
 
@@ -199,8 +245,15 @@ void comms_wifi_ap_init() {
     httpd_handle_t server = NULL;
     if (httpd_start(&server, &http_cfg) == ESP_OK) {
         httpd_uri_t uri_ws = { .uri = "/ws", .method = HTTP_GET, .handler = ws_handler, .user_ctx = NULL, .is_websocket = true };
+        httpd_uri_t uri_action = { .uri = "/action", .method = HTTP_GET, .handler = http_get_action_handler, .user_ctx = NULL };
+        httpd_uri_t uri_claw = { .uri = "/claw", .method = HTTP_GET, .handler = http_get_action_handler, .user_ctx = NULL };
+        httpd_uri_t uri_post = { .uri = "/*", .method = HTTP_POST, .handler = http_post_handler, .user_ctx = NULL };
         httpd_uri_t uri_fallback = { .uri = "/*", .method = HTTP_GET, .handler = captive_portal_handler, .user_ctx = NULL };
+
         httpd_register_uri_handler(server, &uri_ws);
+        httpd_register_uri_handler(server, &uri_action);
+        httpd_register_uri_handler(server, &uri_claw);
+        httpd_register_uri_handler(server, &uri_post);
         httpd_register_uri_handler(server, &uri_fallback);
     }
     ESP_LOGI(TAG, "Wi-Fi Access Point 'pyCar_AP' started at 192.168.4.1");

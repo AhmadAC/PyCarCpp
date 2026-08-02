@@ -42,7 +42,7 @@ static void print_cheatsheet() {
     printf("  NETWORK CONTROLS:\n");
     printf("    wifi ap                 - Start Wi-Fi Access Point (pyCar_AP @ 192.168.4.1)\n");
     printf("    wifi sta <ssid> <pass>  - Connect to Wi-Fi router (e.g., 'wifi sta Home 1234')\n");
-    printf("    ble                     - Enable Bluetooth LE Host (Device Name: pyCar)\n\n");
+    printf("    ble                     - Enable Bluetooth LE Host (Device Name: ESPRobot)\n\n");
     printf("  SYSTEM:\n");
     printf("    status                  - Print real-time sensor & drive telemetry\n");
     printf("    help                    - Reprint this command cheat sheet\n");
@@ -74,14 +74,14 @@ void process_serial_command(const char* cmd) {
     else if (strcasecmp(command, "forward") == 0 || strcasecmp(command, "fwd") == 0) {
         float sec = (num_args >= 2) ? atof(arg1) : 2.0f;
         if (sec <= 0) sec = 2.0f;
-        global_joy.lx = 128; global_joy.ly = 255; global_joy.rx = 128; global_joy.ry = 128;
+        global_joy.lx = 128; global_joy.ly = 0; global_joy.rx = 128; global_joy.ry = 128; // ly = 0 (FORWARD)
         timed_action_end = (esp_timer_get_time() / 1000) + (int64_t)(sec * 1000.0f);
         printf("[OK] Driving FORWARD for %.1f seconds...\n", sec);
     } 
     else if (strcasecmp(command, "backward") == 0 || strcasecmp(command, "back") == 0) {
         float sec = (num_args >= 2) ? atof(arg1) : 2.0f;
         if (sec <= 0) sec = 2.0f;
-        global_joy.lx = 128; global_joy.ly = 0; global_joy.rx = 128; global_joy.ry = 128;
+        global_joy.lx = 128; global_joy.ly = 255; global_joy.rx = 128; global_joy.ry = 128; // ly = 255 (BACKWARD)
         timed_action_end = (esp_timer_get_time() / 1000) + (int64_t)(sec * 1000.0f);
         printf("[OK] Driving BACKWARD for %.1f seconds...\n", sec);
     } 
@@ -102,7 +102,7 @@ void process_serial_command(const char* cmd) {
     else if (strcasecmp(command, "circle") == 0) {
         float sec = (num_args >= 2) ? atof(arg1) : 3.0f;
         if (sec <= 0) sec = 3.0f;
-        global_joy.lx = 220; global_joy.ly = 200; global_joy.rx = 128; global_joy.ry = 128;
+        global_joy.lx = 220; global_joy.ly = 50; global_joy.rx = 128; global_joy.ry = 128;
         timed_action_end = (esp_timer_get_time() / 1000) + (int64_t)(sec * 1000.0f);
         printf("[OK] Driving in a CIRCLE for %.1f seconds...\n", sec);
     } 
@@ -138,7 +138,7 @@ void process_serial_command(const char* cmd) {
     } 
     else if (strcasecmp(command, "ble") == 0) {
         comms_ble_init();
-        printf("[OK] Bluetooth LE initialized (Device Name: pyCar).\n");
+        printf("[OK] Bluetooth LE initialized (Device Name: ESPRobot).\n");
     } 
     else if (strcasecmp(command, "status") == 0) {
         printf("\n--- PYCAR STATUS & TELEMETRY ---\n");
