@@ -1,3 +1,4 @@
+// main/comms_wifi.cpp
 #include "main.h"
 #include "esp_wifi.h"
 #include "esp_http_server.h"
@@ -84,17 +85,25 @@ static const char* HTML_PAGE = R"raw_html(<!DOCTYPE html><html><head><meta name=
 
 void process_remote_command(const char* payload) {
     if (!payload) return;
+    ESP_LOGI(TAG, "RX: %s", payload);
+    
     cJSON *json = cJSON_Parse(payload);
-    if (!json) return;
+    if (!json) {
+        ESP_LOGE(TAG, "Failed to parse JSON!");
+        return;
+    }
     
     cJSON *act = cJSON_GetObjectItem(json, "action");
     if (act && act->valuestring) {
         const char* a = act->valuestring;
-        if (strcmp(a, "forward") == 0)       { global_joy.lx = 128; global_joy.ly = 0; }   // 0 = Joystick UP (FORWARD)
-        else if (strcmp(a, "backward") == 0) { global_joy.lx = 128; global_joy.ly = 255; } // 255 = Joystick DOWN (BACKWARD)
-        else if (strcmp(a, "left") == 0)     { global_joy.lx = 0;   global_joy.ly = 128; }
-        else if (strcmp(a, "right") == 0)    { global_joy.lx = 255; global_joy.ly = 128; }
-        else if (strcmp(a, "stop") == 0)     { global_joy.lx = 128; global_joy.ly = 128; global_joy.rx = 128; global_joy.ry = 128; }
+        ESP_LOGI(TAG, "Parsed Action: %s", a);
+        
+        // When using explicit buttons/actions, completely reset the gamepad state so no leftover controller rotation interrupts it
+        if (strcmp(a, "forward") == 0)       { global_joy.lx = 128; global_joy.ly = 0;   global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
+        else if (strcmp(a, "backward") == 0) { global_joy.lx = 128; global_joy.ly = 255; global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
+        else if (strcmp(a, "left") == 0)     { global_joy.lx = 0;   global_joy.ly = 128; global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
+        else if (strcmp(a, "right") == 0)    { global_joy.lx = 255; global_joy.ly = 128; global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
+        else if (strcmp(a, "stop") == 0)     { global_joy.lx = 128; global_joy.ly = 128; global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
         else if (strcmp(a, "light") == 0)    { car_set_headlight(!headlight_state); }
         else if (strcmp(a, "line") == 0)     { car_set_line_follower(!line_follower_state); }
     } else {

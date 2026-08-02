@@ -1,3 +1,4 @@
+// main/comms_ble.cpp
 #include "main.h"
 #include "esp_log.h"
 #include "nimble/nimble_port.h"
@@ -23,6 +24,7 @@ static int ble_rx_cb(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt
         if (len > 0 && len < (int)sizeof(buf)) {
             os_mbuf_copydata(ctxt->om, 0, len, buf);
             buf[len] = '\0';
+            ESP_LOGI(TAG, "BLE RX Payload Triggered: %s", buf);
             process_remote_command(buf);
         }
     }
