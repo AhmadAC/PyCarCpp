@@ -244,11 +244,31 @@ void comms_wifi_ap_init() {
     http_cfg.uri_match_fn = httpd_uri_match_wildcard;
     httpd_handle_t server = NULL;
     if (httpd_start(&server, &http_cfg) == ESP_OK) {
-        httpd_uri_t uri_ws = { .uri = "/ws", .method = HTTP_GET, .handler = ws_handler, .user_ctx = NULL, .is_websocket = true };
-        httpd_uri_t uri_action = { .uri = "/action", .method = HTTP_GET, .handler = http_get_action_handler, .user_ctx = NULL };
-        httpd_uri_t uri_claw = { .uri = "/claw", .method = HTTP_GET, .handler = http_get_action_handler, .user_ctx = NULL };
-        httpd_uri_t uri_post = { .uri = "/*", .method = HTTP_POST, .handler = http_post_handler, .user_ctx = NULL };
-        httpd_uri_t uri_fallback = { .uri = "/*", .method = HTTP_GET, .handler = captive_portal_handler, .user_ctx = NULL };
+        httpd_uri_t uri_ws = {};
+        uri_ws.uri = "/ws";
+        uri_ws.method = HTTP_GET;
+        uri_ws.handler = ws_handler;
+        uri_ws.is_websocket = true;
+
+        httpd_uri_t uri_action = {};
+        uri_action.uri = "/action";
+        uri_action.method = HTTP_GET;
+        uri_action.handler = http_get_action_handler;
+
+        httpd_uri_t uri_claw = {};
+        uri_claw.uri = "/claw";
+        uri_claw.method = HTTP_GET;
+        uri_claw.handler = http_get_action_handler;
+
+        httpd_uri_t uri_post = {};
+        uri_post.uri = "/*";
+        uri_post.method = HTTP_POST;
+        uri_post.handler = http_post_handler;
+
+        httpd_uri_t uri_fallback = {};
+        uri_fallback.uri = "/*";
+        uri_fallback.method = HTTP_GET;
+        uri_fallback.handler = captive_portal_handler;
 
         httpd_register_uri_handler(server, &uri_ws);
         httpd_register_uri_handler(server, &uri_action);

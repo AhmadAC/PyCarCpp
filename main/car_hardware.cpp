@@ -49,8 +49,9 @@ int target_m2 = 0;
 float last_line_pos = 0.0f;
 float last_error = 0.0f;
 
-static void IRAM_ATTR enc1_isr(void* arg) { count1++; }
-static void IRAM_ATTR enc2_isr(void* arg) { count2++; }
+// Replaced count++ with count = count + 1 to fix deprecated volatile expression warnings
+static void IRAM_ATTR enc1_isr(void* arg) { count1 = count1 + 1; }
+static void IRAM_ATTR enc2_isr(void* arg) { count2 = count2 + 1; }
 
 void car_set_headlight(bool enable) {
     headlight_state = enable;

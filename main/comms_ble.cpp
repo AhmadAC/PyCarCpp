@@ -3,7 +3,6 @@
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
 #include "host/ble_hs.h"
-#include "host/util/ble_hs_util.h"
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
 #include <string.h>
@@ -73,7 +72,6 @@ static int ble_gap_event(struct ble_gap_event *event, void *arg) {
 }
 
 static void ble_app_on_sync(void) {
-    ble_hs_util_ensure_addr(0);
     uint8_t own_addr_type;
     ble_hs_id_infer_auto(0, &own_addr_type);
     

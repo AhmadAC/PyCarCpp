@@ -16,6 +16,10 @@ extern volatile JoyMsg global_joy;
 extern volatile bool has_espnow_peer;
 extern volatile bool is_ap_mode_active;
 
+// Export states so they can be accessed by the Wi-Fi remote controls
+extern bool headlight_state;
+extern bool line_follower_state;
+
 // Subsystem initializers
 void car_hardware_init();
 void car_hardware_loop();
