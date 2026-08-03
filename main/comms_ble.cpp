@@ -15,7 +15,8 @@ static const ble_uuid128_t svc_uuid = BLE_UUID128_INIT(0xfb, 0x34, 0x9b, 0x5f, 0
 static const ble_uuid128_t rx_uuid  = BLE_UUID128_INIT(0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xf1, 0xab, 0x00, 0x00); // 0000abf1-0000-1000-8000-00805f9b34fb
 static const ble_uuid128_t ip_uuid  = BLE_UUID128_INIT(0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xf3, 0xab, 0x00, 0x00); // 0000abf3-0000-1000-8000-00805f9b34fb
 
-static uint16_t ip_handle; // Required by NimBLE for characteristics with NOTIFY flag
+static uint16_t rx_handle; // Ensures NimBLE properly assigns and manages the write characteristic
+static uint16_t ip_handle; 
 
 static void ble_app_on_sync(void);
 
@@ -44,6 +45,7 @@ static const struct ble_gatt_chr_def gatt_chrs[] = {
         .uuid = (const ble_uuid_t *)&rx_uuid,
         .access_cb = ble_rx_cb,
         .flags = BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_WRITE_NO_RSP,
+        .val_handle = &rx_handle,
     },
     {
         .uuid = (const ble_uuid_t *)&ip_uuid,
