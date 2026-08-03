@@ -23,9 +23,10 @@ static void espnow_recv_cb(const esp_now_recv_info_t *info, const uint8_t *data,
     else if (len == 6 && data[0] == 67) {
         last_remote_cmd_time = esp_timer_get_time() / 1000;
         global_joy.lx = data[1];
-        global_joy.ly = data[2];
+        // Invert Y-axes specifically for ESP-NOW pyController so UP drives forward
+        global_joy.ly = 255 - data[2];
         global_joy.rx = data[3];
-        global_joy.ry = data[4];
+        global_joy.ry = 255 - data[4];
         global_joy.btns = data[5];
     }
 }
