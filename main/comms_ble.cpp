@@ -10,10 +10,11 @@
 
 static const char* TAG = "COMMS_BLE";
 
-// Matching Service and Characteristic 128-bit Little Endian UUIDs expected by the Controller App
-static const ble_uuid128_t svc_uuid = BLE_UUID128_INIT(0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xf0, 0xab, 0x00, 0x00); // 0000abf0-0000-1000-8000-00805f9b34fb
-static const ble_uuid128_t rx_uuid  = BLE_UUID128_INIT(0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xf1, 0xab, 0x00, 0x00); // 0000abf1-0000-1000-8000-00805f9b34fb
-static const ble_uuid128_t ip_uuid  = BLE_UUID128_INIT(0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xf3, 0xab, 0x00, 0x00); // 0000abf3-0000-1000-8000-00805f9b34fb
+// Matching Service and Characteristic 16-bit UUIDs expected by the Controller App
+// 0xABF0 maps securely to the standard Bluetooth Base UUID: 0000abf0-0000-1000-8000-00805f9b34fb
+static const ble_uuid16_t svc_uuid = BLE_UUID16_INIT(0xABF0);
+static const ble_uuid16_t rx_uuid  = BLE_UUID16_INIT(0xABF1);
+static const ble_uuid16_t ip_uuid  = BLE_UUID16_INIT(0xABF3);
 
 static uint16_t rx_handle; // Ensures NimBLE properly assigns and manages the write characteristic
 static uint16_t ip_handle; 
