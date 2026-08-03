@@ -1,4 +1,4 @@
-// main/comms_wifi.cpp
+// PyCarCpp/main/comms_wifi.cpp
 #include "main.h"
 #include "esp_wifi.h"
 #include "esp_http_server.h"
@@ -85,7 +85,6 @@ static const char* HTML_PAGE = R"raw_html(<!DOCTYPE html><html><head><meta name=
 
 void process_remote_command(const char* payload) {
     if (!payload) return;
-    ESP_LOGI(TAG, "RX: %s", payload);
     
     cJSON *json = cJSON_Parse(payload);
     if (!json) {
@@ -93,25 +92,52 @@ void process_remote_command(const char* payload) {
         return;
     }
     
+    const char* a = NULL;
     cJSON *act = cJSON_GetObjectItem(json, "action");
+    cJSON *a_num = cJSON_GetObjectItem(json, "a");
+    
+    // Map BLE numerical codes back to English words for backwards compatibility & REPL clarity
     if (act && act->valuestring) {
-        const char* a = act->valuestring;
-        ESP_LOGI(TAG, "Parsed Action: %s", a);
+        a = act->valuestring;
+    } else if (a_num && cJSON_IsNumber(a_num)) {
+        switch(a_num->valueint) {
+            case 1: a = "stop"; break;
+            case 2: a = "forward"; break;
+            case 3: a = "backward"; break;
+            case 4: a = "left"; break;
+            case 5: a = "right"; break;
+            case 6: a = "light"; break;
+            case 7: a = "line"; break;
+        }
+    }
+    
+    if (a) {
+        ESP_LOGI(TAG, "Parsed Action: %s", a); // Display the English translation to the user
         
         // When using explicit buttons/actions, completely reset the gamepad state so no leftover controller rotation interrupts it
-        if (strcmp(a, "forward") == 0)       { global_joy.lx = 128; global_joy.ly = 0;   global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
-        else if (strcmp(a, "backward") == 0) { global_joy.lx = 128; global_joy.ly = 255; global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
-        else if (strcmp(a, "left") == 0)     { global_joy.lx = 0;   global_joy.ly = 128; global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
-        else if (strcmp(a, "right") == 0)    { global_joy.lx = 255; global_joy.ly = 128; global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
-        else if (strcmp(a, "stop") == 0)     { global_joy.lx = 128; global_joy.ly = 128; global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
-        else if (strcmp(a, "light") == 0)    { car_set_headlight(!headlight_state); }
-        else if (strcmp(a, "line") == 0)     { car_set_line_follower(!line_follower_state); }
+        if (strcmp(a, "forward") == 0)                                 { global_joy.lx = 128; global_joy.ly = 0;   global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
+        else if (strcmp(a, "backward") == 0 || strcmp(a, "back") == 0) { global_joy.lx = 128; global_joy.ly = 255; global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
+        else if (strcmp(a, "left") == 0)                               { global_joy.lx = 0;   global_joy.ly = 128; global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
+        else if (strcmp(a, "right") == 0)                              { global_joy.lx = 255; global_joy.ly = 128; global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
+        else if (strcmp(a, "stop") == 0)                               { global_joy.lx = 128; global_joy.ly = 128; global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
+        else if (strcmp(a, "light") == 0)                              { car_set_headlight(!headlight_state); }
+        else if (strcmp(a, "line") == 0)                               { car_set_line_follower(!line_follower_state); }
     } else {
-        cJSON *lx = cJSON_GetObjectItem(json, "lx"); if (lx) global_joy.lx = lx->valueint;
-        cJSON *ly = cJSON_GetObjectItem(json, "ly"); if (ly) global_joy.ly = ly->valueint;
-        cJSON *rx = cJSON_GetObjectItem(json, "rx"); if (rx) global_joy.rx = rx->valueint;
-        cJSON *ry = cJSON_GetObjectItem(json, "ry"); if (ry) global_joy.ry = ry->valueint;
-        cJSON *btns = cJSON_GetObjectItem(json, "btns"); if (btns) global_joy.btns = btns->valueint;
+        // Fallback parsers check for both explicit ("lx") and shortened BLE keys ("x") 
+        cJSON *lx = cJSON_GetObjectItem(json, "lx"); if (!lx) lx = cJSON_GetObjectItem(json, "x");
+        if (lx) global_joy.lx = lx->valueint;
+        
+        cJSON *ly = cJSON_GetObjectItem(json, "ly"); if (!ly) ly = cJSON_GetObjectItem(json, "y");
+        if (ly) global_joy.ly = ly->valueint;
+        
+        cJSON *rx = cJSON_GetObjectItem(json, "rx"); if (!rx) rx = cJSON_GetObjectItem(json, "z");
+        if (rx) global_joy.rx = rx->valueint;
+        
+        cJSON *ry = cJSON_GetObjectItem(json, "ry"); if (!ry) ry = cJSON_GetObjectItem(json, "r");
+        if (ry) global_joy.ry = ry->valueint;
+        
+        cJSON *btns = cJSON_GetObjectItem(json, "btns"); if (!btns) btns = cJSON_GetObjectItem(json, "b");
+        if (btns) global_joy.btns = btns->valueint;
     }
     cJSON_Delete(json);
 }
@@ -156,7 +182,7 @@ static esp_err_t http_post_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
-// HTTP GET Action Handler (e.g., /claw?cmd=open or /action?action=forward)
+// HTTP GET Action Handler
 static esp_err_t http_get_action_handler(httpd_req_t *req) {
     char qbuf[256] = {0};
     if (httpd_req_get_url_query_str(req, qbuf, sizeof(qbuf)) == ESP_OK) {
