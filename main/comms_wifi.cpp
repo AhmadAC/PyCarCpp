@@ -3,6 +3,7 @@
 #include "esp_wifi.h"
 #include "esp_http_server.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "lwip/sockets.h"
 #include "cJSON.h"
 #include <string.h>
@@ -85,6 +86,7 @@ static const char* HTML_PAGE = R"raw_html(<!DOCTYPE html><html><head><meta name=
 
 void process_remote_command(const char* payload) {
     if (!payload) return;
+    last_remote_cmd_time = esp_timer_get_time() / 1000;
     
     cJSON *json = cJSON_Parse(payload);
     if (!json) {

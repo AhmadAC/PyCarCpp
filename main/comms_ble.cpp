@@ -73,6 +73,13 @@ static int ble_gap_event(struct ble_gap_event *event, void *arg) {
             break;
         case BLE_GAP_EVENT_DISCONNECT:
             ESP_LOGI(TAG, "BLE Disconnected. Restarting advertising...");
+            // Immediately stop car motors on BLE disconnect
+            global_joy.lx = 128;
+            global_joy.ly = 128;
+            global_joy.rx = 128;
+            global_joy.ry = 128;
+            global_joy.btns = 8;
+            last_remote_cmd_time = 0;
             ble_app_on_sync();
             break;
     }

@@ -1,8 +1,8 @@
-
 #include "main.h"
 #include "esp_now.h"
 #include "esp_wifi.h"
 #include "esp_mac.h"
+#include "esp_timer.h"
 #include <string.h>
 
 static uint8_t controller_mac[6];
@@ -21,6 +21,7 @@ static void espnow_recv_cb(const esp_now_recv_info_t *info, const uint8_t *data,
         esp_now_send(controller_mac, (const uint8_t*)"pyCAR_ACK", 9);
     } 
     else if (len == 6 && data[0] == 67) {
+        last_remote_cmd_time = esp_timer_get_time() / 1000;
         global_joy.lx = data[1];
         global_joy.ly = data[2];
         global_joy.rx = data[3];

@@ -15,6 +15,7 @@ struct JoyMsg {
 extern volatile JoyMsg global_joy;
 extern volatile bool has_espnow_peer;
 extern volatile bool is_ap_mode_active;
+extern volatile int64_t last_remote_cmd_time;
 
 // Export states so they can be accessed by the Wi-Fi remote controls
 extern bool headlight_state;

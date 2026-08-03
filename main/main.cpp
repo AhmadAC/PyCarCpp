@@ -15,6 +15,7 @@ static const char* TAG = "MAIN";
 volatile JoyMsg global_joy = {67, 128, 128, 128, 128, 8};
 volatile bool has_espnow_peer = false;
 volatile bool is_ap_mode_active = false;
+volatile int64_t last_remote_cmd_time = 0;
 
 extern float current_distance;
 extern float line_follower_gap;
@@ -211,6 +212,20 @@ void car_control_task(void *pv) {
             global_joy.ry = 128;
             printf("\n[TIMED ACTION COMPLETE] Motors stopped.\npycar> ");
             fflush(stdout);
+        }
+
+        // SAFETY WATCHDOG: If no remote command (BLE/WiFi/ESP-NOW) received for > 600ms, automatically stop motors!
+        if (timed_action_end == 0 && !line_follower_state && last_remote_cmd_time > 0) {
+            if (now_ms - last_remote_cmd_time > 600) {
+                if (global_joy.lx != 128 || global_joy.ly != 128 || global_joy.rx != 128 || global_joy.ry != 128) {
+                    global_joy.lx = 128;
+                    global_joy.ly = 128;
+                    global_joy.rx = 128;
+                    global_joy.ry = 128;
+                    global_joy.btns = 8;
+                    ESP_LOGW(TAG, "[SAFETY WATCHDOG] Connection lost or idle timeout! Motors stopped.");
+                }
+            }
         }
 
         car_hardware_loop();
