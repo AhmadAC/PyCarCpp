@@ -112,7 +112,7 @@ void process_remote_command(const char* payload) {
     }
     
     if (a) {
-        ESP_LOGI(TAG, "Parsed Action: %s", a); // Display the English translation to the user
+        ESP_LOGI(TAG, "Parsed Action: %s", a); // Display the English translation to the REPL Console
         
         // When using explicit buttons/actions, completely reset the gamepad state so no leftover controller rotation interrupts it
         if (strcmp(a, "forward") == 0)                                 { global_joy.lx = 128; global_joy.ly = 0;   global_joy.rx = 128; global_joy.ry = 128; global_joy.btns = 8; }
