@@ -1,4 +1,4 @@
-// main/comms_ble.cpp
+// PyCarCpp/main/comms_ble.cpp
 #include "main.h"
 #include "esp_log.h"
 #include "nimble/nimble_port.h"
@@ -14,6 +14,8 @@ static const char* TAG = "COMMS_BLE";
 static const ble_uuid128_t svc_uuid = BLE_UUID128_INIT(0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xf0, 0xab, 0x00, 0x00); // 0000abf0-0000-1000-8000-00805f9b34fb
 static const ble_uuid128_t rx_uuid  = BLE_UUID128_INIT(0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xf1, 0xab, 0x00, 0x00); // 0000abf1-0000-1000-8000-00805f9b34fb
 static const ble_uuid128_t ip_uuid  = BLE_UUID128_INIT(0xfb, 0x34, 0x9b, 0x5f, 0x80, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0xf3, 0xab, 0x00, 0x00); // 0000abf3-0000-1000-8000-00805f9b34fb
+
+static uint16_t ip_handle; // Required by NimBLE for characteristics with NOTIFY flag
 
 static void ble_app_on_sync(void);
 
@@ -47,6 +49,7 @@ static const struct ble_gatt_chr_def gatt_chrs[] = {
         .uuid = (const ble_uuid_t *)&ip_uuid,
         .access_cb = ble_ip_cb,
         .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
+        .val_handle = &ip_handle,
     },
     { 0 }
 };
